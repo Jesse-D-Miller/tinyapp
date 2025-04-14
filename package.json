@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/Jesse-D-Miller/tinyapp/issues"
   },
-  "homepage": "https://github.com/Jesse-D-Miller/tinyapp#readme"
+  "homepage": "https://github.com/Jesse-D-Miller/tinyapp#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
 }
