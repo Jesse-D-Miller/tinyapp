@@ -4,13 +4,6 @@ const PORT = 8080; //default port
 
 app.set("view engine", "ejs");
 
-app.use(express.urlencoded({ extended: true }));
-
-const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
-};
-
 function generateRandomString() { //generate string of 6 aplhanumeric chars
   const length = 6;
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -24,8 +17,14 @@ function generateRandomString() { //generate string of 6 aplhanumeric chars
   return shortURL;
 }
 
-app.post("/urls", (req, res) => {
+app.use(express.urlencoded({ extended: true }));
 
+const urlDatabase = {
+  b2xVn2: "http://www.lighthouselabs.ca",
+  "9sm5xK": "http://www.google.com",
+};
+
+app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
 
   const shortURL = generateRandomString();
@@ -33,10 +32,14 @@ app.post("/urls", (req, res) => {
 
 
   res.redirect(`/urls/${shortURL}`);
-
-  
 });
 
+app.post("/urls/:id/delete", (req, res) => {
+  //delete correct value
+  // console.log(req.params.id);
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
 
 app.get("/", (req, res) => {
   res.send("Hello!");
