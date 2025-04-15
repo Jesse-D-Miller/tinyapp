@@ -8,12 +8,12 @@ function generateRandomString() { //generate string of 6 aplhanumeric chars
   const length = 6;
   const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let shortURL = "";
-  
+
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * charset.length);
     shortURL += charset[randomIndex];
   }
-  
+
   return shortURL;
 }
 
@@ -62,13 +62,13 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-app.get("/u/:id", (req,res) => {
+app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id]};
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   res.render("urls_show", templateVars);
 });
 
