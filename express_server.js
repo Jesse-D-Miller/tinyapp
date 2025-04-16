@@ -88,6 +88,18 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+app.get("/register", (req, res) => {
+  // console.log(req, "🥹🥹🥹🥹🥹");
+  // console.log(res, "👏👏👏👏👏");
+  // // const email = req.params[email];
+  // // const password = req.params[password];
+  // // const templateVars = {email, password};
+  const templateVars = {username: req.cookies["username"]};
+  res.render("register", templateVars);
+});
+
+//===========================================================>ambiguous GET
+
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
