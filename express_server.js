@@ -1,3 +1,4 @@
+const { name } = require("ejs");
 const express = require("express");
 const app = express();
 const PORT = 8080; //default port
@@ -35,8 +36,6 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  //delete correct value
-  // console.log(req.params.id);
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
@@ -44,6 +43,14 @@ app.post("/urls/:id/delete", (req, res) => {
 //make edit form actually edit the object
 app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls")
+});
+
+app.post("/login", (req, res) => {
+  //set username ----> login (req)
+  res.cookie(req.body.username);
+  // console.log(req.body.username)
+  // console.log(res)
   res.redirect("/urls")
 });
 
