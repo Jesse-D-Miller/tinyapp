@@ -41,6 +41,12 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
+//make edit form actually edit the object
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls")
+});
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
