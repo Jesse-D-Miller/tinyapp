@@ -144,7 +144,7 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  userId = req.cookies["userId"];
+  const userId = req.cookies["userId"];
   const templateVars = {
     user: users[userId],
     urls: urlDatabase
@@ -153,15 +153,21 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  userId = req.cookies["userId"];
+  const userId = req.cookies["userId"];
   const templateVars = { user: users[userId] };
   res.render("urls_new", templateVars);
 });
 
 app.get("/register", (req, res) => {
-  userId = req.cookies["userId"];
+  const userId = req.cookies["userId"];
   const templateVars = { user: users[userId] };
   res.render("register", templateVars);
+});
+
+app.get("/login", (req, res) => {
+
+  const templateVars = { user: null};
+  res.render("login", templateVars);
 });
 
 //===========================================================>ambiguous GET
@@ -172,7 +178,7 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  userId = req.cookies["userId"];
+  const userId = req.cookies["userId"];
   const templateVars = {
     user: users[userId],
     id: req.params.id,
