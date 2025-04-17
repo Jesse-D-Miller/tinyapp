@@ -70,6 +70,10 @@ lookupUser = (users, inputEmail) => {
 //===========================================================>POST
 
 app.post("/urls", (req, res) => {
+  if (req.cookies["userId"] === undefined) {
+    return res.status(400).send("You must be logged in to shorten URLs.");
+  }
+  
   console.log(req.body); // Log the POST request body to the console
 
   const shortURL = generateRandomString();
@@ -167,19 +171,33 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  if (req.cookies["userId"] === undefined) {
+    res.redirect("/login");
+    return;
+  }
   const userId = req.cookies["userId"];
   const templateVars = { user: users[userId] };
   res.render("urls_new", templateVars);
 });
 
 app.get("/register", (req, res) => {
+  if (req.cookies["userId"] !== undefined) {
+    res.redirect("/urls");
+    return;
+  }
+  //if userId !== null ---> resirect to /urls
   const userId = req.cookies["userId"];
   const templateVars = { user: users[userId] };
   res.render("register", templateVars);
 });
 
 app.get("/login", (req, res) => {
-
+  console.log(req.cookies["userId"]);
+  if (req.cookies["userId"] !== undefined) {
+    res.redirect("/urls");
+    return;
+  }
+  //if userId !== null ---> resirect to /urls
   const templateVars = { user: null };
   res.render("login", templateVars);
 });
@@ -188,6 +206,9 @@ app.get("/login", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
+  if (urlDatabase[req.params.id] === undefined) {
+    return res.status(404).send("The shortened URL you are trying to visit does not exist")
+  }
   res.redirect(longURL);
 });
 
