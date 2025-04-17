@@ -16,27 +16,27 @@ const urlDatabase = {
 
 const users = {
   QuxY1J: {
-    id: "QuxY1J",
+    userId: "QuxY1J",
     email: "kaladin@windrunners.com",
     password: "protect-heal-lead",
   },
   NZRbQO: {
-    id: "NZRbQO",
+    userId: "NZRbQO",
     email: "shallan@lightweavers.org",
     password: "truths-and-illusions",
   },
   n7xlMf: {
-    id: "n7xlMf",
+    userId: "n7xlMf",
     email: "dalinar@bondsmiths.gov",
     password: "unite-them",
   },
   gtLj8R: {
-    id: "gtLj8R",
+    userId: "gtLj8R",
     email: "vin@scadrial.net",
     password: "steelpush-coinshot",
   },
   ci2kRX: {
-    id: "ci2kRX",
+    userId: "ci2kRX",
     email: "kelsier@crewofrebels.org",
     password: "survivor-of-hathsin",
   },
@@ -57,15 +57,16 @@ function generateRandomString() { //generate string of 6 aplhanumeric chars
   return shortURL;
 };
 
-lookupUser = (users, newUserEmail) => {
+lookupUser = (users, inputEmail) => {
   for (const userId in users) {
     const user = users[userId];
-    if (user.email === newUserEmail){
-      return { error: "Invalid email! Account already exists", user };
+    if (user.email === inputEmail) {
+      return { error: "Invalid email! Account already exists", user }; //going to have to refactor this to not contain error message maybe
     }
   }
   return { error: null, user: null };
 };
+
 //===========================================================>POST
 
 app.post("/urls", (req, res) => {
@@ -83,7 +84,6 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-//make edit form actually edit the object
 app.post("/urls/:id", (req, res) => {
   urlDatabase[req.params.id] = req.body.longURL;
   res.redirect("/urls")
@@ -92,14 +92,28 @@ app.post("/urls/:id", (req, res) => {
 //========>login/logout handler
 
 app.post("/login", (req, res) => {
-  //set username ----> login (req)
-  res.cookie("userId", req.body.userId);
+  const email = req.body.email;
+  const password = req.body.password;
+
+  //look up the user by their email
+  const { user } = lookupUser(users, email);
+  if (!user) {
+    return res.status(403).send("Invalid Email");
+  }
+
+  //compare passwords
+  if (user.password !== password) {
+    return res.status(403).send("Invalid Password");
+  }
+
+  //if success -> set cookie and redirect
+  res.cookie("userId", user.userId);
   res.redirect("/urls");
 });
 
 app.post("/logout", (req, res) => {
   res.clearCookie("userId");
-  res.redirect("/urls")
+  res.redirect("/login");
 });
 
 //========>registration handler
@@ -118,7 +132,7 @@ app.post("/register", (req, res) => {
   if (user) {
     return res.status(400).send(error); //send error from lookupUser
   }
-  
+
   const userId = generateRandomString();
   users[userId] = { userId, email, password };
 
@@ -166,7 +180,7 @@ app.get("/register", (req, res) => {
 
 app.get("/login", (req, res) => {
 
-  const templateVars = { user: null};
+  const templateVars = { user: null };
   res.render("login", templateVars);
 });
 
