@@ -55,8 +55,17 @@ function generateRandomString() { //generate string of 6 aplhanumeric chars
   }
 
   return shortURL;
-}
+};
 
+lookupUser = (users, newUserEmail) => {
+  for (const userId in users) {
+    const user = users[userId];
+    if (user.email === newUserEmail){
+      return { error: "Invalid email! Account already exists", user };
+    }
+  }
+  return { error: null, user: null };
+};
 //===========================================================>POST
 
 app.post("/urls", (req, res) => {
@@ -96,14 +105,24 @@ app.post("/logout", (req, res) => {
 //========>registration handler
 
 app.post("/register", (req, res) => {
-  console.log("New User Resgistration: ", req.body);
-
-  const userId = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
 
+  // 1. if email or password are empty 'required' will not submit
+  if (!email || !password) {
+    return res.status(400).send("Email and password cannot be empty.");
+  }
+
+  // 2. If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
+  const { error, user } = lookupUser(users, email);
+  if (user) {
+    return res.status(400).send(error); //send error from lookupUser
+  }
+  
+  const userId = generateRandomString();
   users[userId] = { userId, email, password };
-  console.log(" User Account Created: ", users[userId]);
+
+  console.log("User Account Created: ", users[userId]);
 
   res.cookie("userId", userId);
   res.redirect("/urls");
@@ -126,7 +145,6 @@ app.get("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   userId = req.cookies["userId"];
-  console.log(users[userId]);
   const templateVars = {
     user: users[userId],
     urls: urlDatabase
