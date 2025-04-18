@@ -238,7 +238,7 @@ app.get("/urls", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   //check if logged in. RESTRICTED PERMISSION
-  if (req.cookies["userId"] === undefined) {
+  if (!req.cookies["userId"]) {
     res.redirect("/login");
     return;
   }
