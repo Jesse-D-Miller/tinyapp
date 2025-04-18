@@ -10,8 +10,22 @@ app.use(express.urlencoded({ extended: true }));
 //===========================================================>Data Storage
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "NZRbQO",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "NZRbQO",
+  },
+  b2xVn2: {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "QuxY1J",
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "QuxY1J",
+  },
 };
 
 const users = {
@@ -67,29 +81,76 @@ lookupUser = (users, inputEmail) => {
   return { error: null, user: null };
 };
 
-//===========================================================>POST
+urlsForUser = (cookieID, urlDatabase) => {
+  const userURLs = {};
+  for (const shortURL in urlDatabase) {
+    let urlEntry = urlDatabase[shortURL];
+    if (urlEntry.userID === cookieID) {
+      userURLs[shortURL] = {
+        longURL: urlEntry.longURL,
+        userID: urlEntry.userID,
+      };
+    }
+  }
+  return userURLs
+};
 
+//===========================================================>POST
+//user input from /urls --> creates shortURL --> constructs object
 app.post("/urls", (req, res) => {
   if (req.cookies["userId"] === undefined) {
     return res.status(400).send("You must be logged in to shorten URLs.");
   }
-  
+
   console.log(req.body); // Log the POST request body to the console
 
   const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["userId"],
+  };
 
 
   res.redirect(`/urls/${shortURL}`);
 });
 
+//user clicks delete and this deletes the object associated witht the short URL
 app.post("/urls/:id/delete", (req, res) => {
+  //user ID in object but i think this is supposed to be the short url!!!!
+  if (!urlDatabase[req.params.id].userID) {
+    return res.status(403).send("Cannot DELETE: That URL belongs to a different user.");
+  }
+  //if user not logged in
+  const userId = req.cookies["userId"];
+  if (!userId) {
+    return res.status(403).send("Cannot DELETE: You must be logged in to delete your URLs.");
+  }
+  //if user does not own URL
+  if (userId !== urlDatabase[req.params.id].userID) {
+    return res.status(403).send("Cannot DELETE: That URL belongs to a different user.");
+  }
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
 
+//deals with editing, takes short URL and assigns new long URL
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
+  const userId = req.cookies["userId"];
+
+  //URL not found
+  if (!urlDatabase[req.params.id]) {
+    return res.status(403).send("Cannot EDIT: URL not found.");
+  }
+  //if user not logged in
+  if (!userId) {
+    return res.status(403).send("Cannot EDIT: You must be logged in to edit your URLs. <a href='/login'>Login</a>");
+  }
+  //if user does not own URL
+  if (userId !== urlDatabase[req.params.id].userID) {
+    return res.status(403).send("Cannot EDIT: That URL belongs to a different user.");
+  }
+
+  urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect("/urls")
 });
 
@@ -115,6 +176,7 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+//when user clicks logout ---> clears cookie and redirects to /login
 app.post("/logout", (req, res) => {
   res.clearCookie("userId");
   res.redirect("/login");
@@ -126,17 +188,18 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  // 1. if email or password are empty 'required' will not submit
+  // if email or password are empty 'required' will not submit
   if (!email || !password) {
     return res.status(400).send("Email and password cannot be empty.");
   }
 
-  // 2. If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
+  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
   const { error, user } = lookupUser(users, email);
   if (user) {
     return res.status(400).send(error); //send error from lookupUser
   }
 
+  //generate userId and user object
   const userId = generateRandomString();
   users[userId] = { userId, email, password };
 
@@ -163,14 +226,18 @@ app.get("/hello", (req, res) => {
 
 app.get("/urls", (req, res) => {
   const userId = req.cookies["userId"];
+  if (!userId) {
+    return res.status(401).send("You must be logged in to view your URLs. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
+  }
   const templateVars = {
     user: users[userId],
-    urls: urlDatabase
+    urls: urlsForUser(userId, urlDatabase),
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
+  //check if logged in. RESTRICTED PERMISSION
   if (req.cookies["userId"] === undefined) {
     res.redirect("/login");
     return;
@@ -181,43 +248,50 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
+  //if logged in --->redirect from /register ---> /urls
   if (req.cookies["userId"] !== undefined) {
     res.redirect("/urls");
     return;
   }
-  //if userId !== null ---> resirect to /urls
   const userId = req.cookies["userId"];
   const templateVars = { user: users[userId] };
   res.render("register", templateVars);
 });
 
 app.get("/login", (req, res) => {
+  //if logged in --->redirect from /login ---> /urls
   console.log(req.cookies["userId"]);
   if (req.cookies["userId"] !== undefined) {
     res.redirect("/urls");
     return;
   }
-  //if userId !== null ---> resirect to /urls
   const templateVars = { user: null };
   res.render("login", templateVars);
 });
 
 //===========================================================>ambiguous GET
 
+// /u/(short url) redirects user to long url
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
-  if (urlDatabase[req.params.id] === undefined) {
+  const shortURLObject = urlDatabase[req.params.id];
+  if (shortURLObject === undefined) {
     return res.status(404).send("The shortened URL you are trying to visit does not exist")
   }
-  res.redirect(longURL);
+  res.redirect(shortURLObject.longURL);
 });
 
 app.get("/urls/:id", (req, res) => {
   const userId = req.cookies["userId"];
+
+  //if user does not own URL
+  if (userId !== urlDatabase[req.params.id]) {
+    return res.status(403).send("Cannot View: That URL belongs to a different user.");
+  }
+
   const templateVars = {
     user: users[userId],
     id: req.params.id,
-    longURL: urlDatabase[req.params.id]
+    longURL: urlDatabase[req.params.id].longURL,
   };
   res.render("urls_show", templateVars);
 });
