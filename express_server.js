@@ -1,6 +1,7 @@
 const { name } = require("ejs");
 const express = require("express");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
 const app = express();
 app.use(cookieParser());
 const PORT = 8080; //default port
@@ -56,7 +57,7 @@ const users = {
   },
 };
 
-//===========================================================>functions
+//===========================================================>Helper functions
 
 function generateRandomString() { //generate string of 6 aplhanumeric chars
   const length = 6;
@@ -114,6 +115,64 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+//========>login/logout handler
+
+app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  
+  //look up the user by their email
+  const { user } = lookupUser(users, email);
+  if (!user) {
+    return res.status(403).send("Invalid Email");
+  }
+  
+  //compare passwords
+  if (!bcrypt.compareSync(password, user.hashedPassword)) { 
+    return res.status(403).send("Invalid Password");
+  }
+
+  
+  
+  //if success -> set cookie and redirect
+  res.cookie("userId", user.userId);
+  res.redirect("/urls");
+});
+
+//when user clicks logout ---> clears cookie and redirects to /login
+app.post("/logout", (req, res) => {
+  res.clearCookie("userId");
+  res.redirect("/login");
+});
+
+//========>registration handler
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  // if email or password are empty 'required' will not submit
+  if (!email || !password) {
+    return res.status(400).send("Email and password cannot be empty.");
+  }
+
+  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
+  const { error, user } = lookupUser(users, email);
+  if (user) {
+    return res.status(400).send(error); //send error from lookupUser
+  }
+
+  //generate userId and user object
+  const userId = generateRandomString();
+  users[userId] = { userId, email, hashedPassword };
+
+  console.log("User Account Created: ", users[userId]);
+
+  res.cookie("userId", userId);
+  res.redirect("/urls");
+
+});
+
 //user clicks delete and this deletes the object associated witht the short URL
 app.post("/urls/:id/delete", (req, res) => {
   //user ID in object but i think this is supposed to be the short url!!!!
@@ -152,62 +211,6 @@ app.post("/urls/:id", (req, res) => {
 
   urlDatabase[req.params.id].longURL = req.body.longURL;
   res.redirect("/urls")
-});
-
-//========>login/logout handler
-
-app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  //look up the user by their email
-  const { user } = lookupUser(users, email);
-  if (!user) {
-    return res.status(403).send("Invalid Email");
-  }
-
-  //compare passwords
-  if (user.password !== password) {
-    return res.status(403).send("Invalid Password");
-  }
-
-  //if success -> set cookie and redirect
-  res.cookie("userId", user.userId);
-  res.redirect("/urls");
-});
-
-//when user clicks logout ---> clears cookie and redirects to /login
-app.post("/logout", (req, res) => {
-  res.clearCookie("userId");
-  res.redirect("/login");
-});
-
-//========>registration handler
-
-app.post("/register", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-
-  // if email or password are empty 'required' will not submit
-  if (!email || !password) {
-    return res.status(400).send("Email and password cannot be empty.");
-  }
-
-  // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
-  const { error, user } = lookupUser(users, email);
-  if (user) {
-    return res.status(400).send(error); //send error from lookupUser
-  }
-
-  //generate userId and user object
-  const userId = generateRandomString();
-  users[userId] = { userId, email, password };
-
-  console.log("User Account Created: ", users[userId]);
-
-  res.cookie("userId", userId);
-  res.redirect("/urls");
-
 });
 
 //===========================================================>GET
