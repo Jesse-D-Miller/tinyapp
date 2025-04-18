@@ -15,10 +15,11 @@ const getUserByEmail = (users, inputEmail) => {
   for (const userId in users) {
     const user = users[userId];
     if (user.email === inputEmail) {
-      return { error: "Invalid email! Account already exists", user }; //going to have to refactor this to not contain error message maybe
+      return user;
     }
   }
-  return { error: null, user: null };
+  
+  return null;
 };
 
 const getUserURLsByCookieID = (cookieID, urlDatabase) => {

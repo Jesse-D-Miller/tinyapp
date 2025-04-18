@@ -2,7 +2,7 @@ const { name } = require("ejs");
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
-const { getUserURLsByCookieID, getUserByEmail, generateRandomString } = require("./helpers");
+const { getUserURLsByCookieID, getUserByEmail, generateRandomString } = require("./helpers.js");
 const app = express();
 app.use(cookieSession({
   name: 'session',
@@ -88,7 +88,7 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
 
   //look up the user by their email
-  const { user } = getUserByEmail(users, email);
+  const user = getUserByEmail(users, email);
   if (!user) {
     return res.status(403).send("Invalid Email");
   }
@@ -124,9 +124,9 @@ app.post("/register", (req, res) => {
   }
 
   // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
-  const { error, user } = getUserByEmail(users, email);
+  const user = getUserByEmail(users, email);
   if (user) {
-    return res.status(400).send(error); //send error from getUserByEmail
+    return res.status(400).send("Invalid email! Account already exists");
   }
 
   //generate userId and user object
