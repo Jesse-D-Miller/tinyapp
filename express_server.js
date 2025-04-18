@@ -90,12 +90,12 @@ app.post("/login", (req, res) => {
   //look up the user by their email
   const user = getUserByEmail(users, email);
   if (!user) {
-    return res.status(403).send("Invalid Email");
+    return res.status(403).send("Invalid Email. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
 
   //compare passwords
   if (!bcrypt.compareSync(password, user.hashedPassword)) {
-    return res.status(403).send("Invalid Password");
+    return res.status(403).send("Invalid Password. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
 
 
@@ -126,7 +126,7 @@ app.post("/register", (req, res) => {
   // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
   const user = getUserByEmail(users, email);
   if (user) {
-    return res.status(400).send("Invalid email! Account already exists");
+    return res.status(400).send("Invalid email! Account already exists. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
 
   //generate userId and user object
@@ -142,20 +142,26 @@ app.post("/register", (req, res) => {
 
 //user clicks delete and this deletes the object associated witht the short URL
 app.post("/urls/:id/delete", (req, res) => {
-  //user ID in object but i think this is supposed to be the short url!!!!
-  if (!urlDatabase[req.params.id].userID) {
-    return res.status(403).send("Cannot DELETE: That URL belongs to a different user.");
-  }
-  //if user not logged in
   const userId = req.session["userId"];
+  const shortURL = req.params.id;
+  
+  //none of the href links will work because we can only post to delete and we never render a page. these lines protect against malicious cURL behaviours 
+  //if user not logged in
   if (!userId) {
-    return res.status(403).send("Cannot DELETE: You must be logged in to delete your URLs.");
+    return res.status(403).send("Cannot DELETE: You must be logged in to delete your URLs. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
+
+  //check if short URL exists
+  if (!urlDatabase[shortURL]) {
+    return res.status(403).send("Cannot DELETE: Short URL not found. click <a href='/urls'>HERE</a> to see your URLs.");
+  }
+
   //if user does not own URL
-  if (userId !== urlDatabase[req.params.id].userID) {
-    return res.status(403).send("Cannot DELETE: That URL belongs to a different user.");
+  if (userId !== urlDatabase[shortURL].userID) {
+    return res.status(403).send("Cannot DELETE: That URL belongs to a different user. click <a href='/urls'>HERE</a> to see your URLs.");
   }
-  delete urlDatabase[req.params.id];
+
+  delete urlDatabase[shortURL];
   res.redirect("/urls");
 });
 
@@ -250,7 +256,7 @@ app.get("/login", (req, res) => {
 app.get("/u/:id", (req, res) => {
   const shortURLObject = urlDatabase[req.params.id];
   if (!shortURLObject) {
-    return res.status(404).send("The shortened URL you are trying to visit does not exist")
+    return res.status(404).send("The shortened URL you are trying to visit does not exist. <a href='/urls'>Return</a>.")
   }
   res.redirect(shortURLObject.longURL);
 });
@@ -259,13 +265,13 @@ app.get("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
 
   if (!urlDatabase[req.params.id]) {
-    return res.status(404).send("URL not found.");
+    return res.status(404).send("URL not found. click <a href='/urls'>HERE</a> to see your URLs.");
   }
   if (!userId) {
-    return res.status(403).send("You must be logged in to view this URL.");
+    return res.status(403).send("You must be logged in to view this URL. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
   if (urlDatabase[req.params.id].userID !== userId) {
-    return res.status(403).send("This URL does not belong to you.");
+    return res.status(403).send("This URL does not belong to you. <a href='/urls'>HERE</a> to see your URLs.");
   }
 
   const templateVars = {
