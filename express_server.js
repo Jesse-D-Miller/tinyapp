@@ -2,6 +2,7 @@ const { name } = require("ejs");
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
+const { getUserURLsByCookieID, getUserByEmail, generateRandomString } = require("./helpers");
 const app = express();
 app.use(cookieSession({
   name: 'session',
@@ -61,45 +62,6 @@ const users = {
   },
 };
 
-//===========================================================>Helper functions
-
-const generateRandomString = () => { //generate string of 6 aplhanumeric chars
-  const length = 6;
-  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let shortURL = "";
-
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    shortURL += charset[randomIndex];
-  }
-
-  return shortURL;
-};
-
-const lookupUser = (users, inputEmail) => {
-  for (const userId in users) {
-    const user = users[userId];
-    if (user.email === inputEmail) {
-      return { error: "Invalid email! Account already exists", user }; //going to have to refactor this to not contain error message maybe
-    }
-  }
-  return { error: null, user: null };
-};
-
-urlsForUser = (cookieID, urlDatabase) => {
-  const userURLs = {};
-  for (const shortURL in urlDatabase) {
-    let urlEntry = urlDatabase[shortURL];
-    if (urlEntry.userID === cookieID) {
-      userURLs[shortURL] = {
-        longURL: urlEntry.longURL,
-        userID: urlEntry.userID,
-      };
-    }
-  }
-  return userURLs
-};
-
 //===========================================================>POST
 //user input from /urls --> creates shortURL --> constructs object
 app.post("/urls", (req, res) => {
@@ -126,7 +88,7 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
 
   //look up the user by their email
-  const { user } = lookupUser(users, email);
+  const { user } = getUserByEmail(users, email);
   if (!user) {
     return res.status(403).send("Invalid Email");
   }
@@ -162,9 +124,9 @@ app.post("/register", (req, res) => {
   }
 
   // If someone tries to register with an email that is already in the users object, send back a response with the 400 status code.
-  const { error, user } = lookupUser(users, email);
+  const { error, user } = getUserByEmail(users, email);
   if (user) {
-    return res.status(400).send(error); //send error from lookupUser
+    return res.status(400).send(error); //send error from getUserByEmail
   }
 
   //generate userId and user object
@@ -239,7 +201,7 @@ app.get("/urls", (req, res) => {
   }
   const templateVars = {
     user: users[userId],
-    urls: urlsForUser(userId, urlDatabase),
+    urls: getUserURLsByCookieID(userId, urlDatabase),
   };
   res.render("urls_index", templateVars);
 });
@@ -268,7 +230,6 @@ app.get("/register", (req, res) => {
 
 app.get("/login", (req, res) => {
   //if logged in --->redirect from /login ---> /urls
-  console.log(req.session["userId"]);
   if (req.session["userId"] !== undefined) {
     res.redirect("/urls");
     return;
