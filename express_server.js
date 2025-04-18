@@ -183,7 +183,13 @@ app.post("/urls/:id", (req, res) => {
 //===========================================================>GET
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  // res.send("Hello!");
+  const userId = req.session["userId"];
+  if (!userId){
+    res.redirect("/login");
+    return;
+  }
+  res.redirect("/urls");
 });
 
 app.get("/urls.json", (req, res) => {
