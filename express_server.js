@@ -13,7 +13,7 @@ const PORT = 8080; //default port
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 
-//===========================================================>Data Storage
+//=================================================================================================>Data Storage
 
 const urlDatabase = {
   b6UTxQ: {
@@ -62,7 +62,7 @@ const users = {
   },
 };
 
-//===========================================================>POST
+//=================================================================================================>POST
 //user input from /urls --> creates shortURL --> constructs object
 app.post("/urls", (req, res) => {
   if (req.session["userId"] === undefined) {
@@ -94,7 +94,7 @@ app.post("/login", (req, res) => {
   }
 
   // If success -> set session and redirect
-  req.session.userId = user.userId;  // Assuming you've stored the userId correctly
+  req.session.userId = user.userId;
   res.redirect("/urls");
 });
 
@@ -105,13 +105,12 @@ app.post("/logout", (req, res) => {
   res.redirect("/login");
 });
 
-//========>registration handler
-
+//registration handler
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
-  // if email or password are empty 'required' will not submit
+  // if email or password are empty 'required' will not submit, this line should never evaluate
   if (!email || !password) {
     return res.status(400).send("Email and password cannot be empty.");
   }
@@ -133,12 +132,14 @@ app.post("/register", (req, res) => {
 
 });
 
+//================================================>ambiguous POST
+
 //user clicks delete and this deletes the object associated witht the short URL
 app.post("/urls/:id/delete", (req, res) => {
   const userId = req.session["userId"];
   const shortURL = req.params.id;
   
-  //none of the href links will work because we can only post to delete and we never render a page. these lines protect against malicious cURL behaviours 
+  //none of the href links will work because user can only post to delete and server never renders the page. these lines protect against malicious cURL behaviours 
   //if user not logged in
   if (!userId) {
     return res.status(403).send("Cannot DELETE: You must be logged in to delete your URLs. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
@@ -179,10 +180,9 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls")
 });
 
-//===========================================================>GET
+//=================================================================================================>GET
 
 app.get("/", (req, res) => {
-  // res.send("Hello!");
   const userId = req.session["userId"];
   if (!userId){
     res.redirect("/login");
@@ -243,7 +243,7 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-//===========================================================>ambiguous GET
+//================================================>ambiguous GET
 
 // /u/(short url) redirects user to long url
 app.get("/u/:id", (req, res) => {
@@ -275,7 +275,7 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//===========================================================>LISTENER
+//=================================================================================================>LISTENER
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
