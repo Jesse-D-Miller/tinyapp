@@ -89,16 +89,9 @@ app.post("/login", (req, res) => {
 
   //look up the user by their email
   const user = getUserByEmail(users, email);
-  if (!user) {
-    return res.status(403).send("Invalid Email. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
+  if (!user || !bcrypt.compareSync(password, user.hashedPassword)) {
+    return res.status(403).send("Invalid email or password. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
   }
-
-  //compare passwords
-  if (!bcrypt.compareSync(password, user.hashedPassword)) {
-    return res.status(403).send("Invalid Password. <a href='/login'>Login</a> or <a href='/register'>Register</a>");
-  }
-
-
 
   // If success -> set session and redirect
   req.session.userId = user.userId;  // Assuming you've stored the userId correctly
@@ -168,11 +161,7 @@ app.post("/urls/:id/delete", (req, res) => {
 //deals with editing, takes short URL and assigns new long URL
 app.post("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
-
-  //URL not found
-  if (!urlDatabase[req.params.id]) {
-    return res.status(403).send("Cannot EDIT: URL not found.");
-  }
+  
   //if user not logged in
   if (!userId) {
     return res.status(403).send("Cannot EDIT: You must be logged in to edit your URLs. <a href='/login'>Login</a>");
@@ -180,6 +169,10 @@ app.post("/urls/:id", (req, res) => {
   //if user does not own URL
   if (userId !== urlDatabase[req.params.id].userID) {
     return res.status(403).send("Cannot EDIT: That URL belongs to a different user.");
+  }
+  //URL not found
+  if (!urlDatabase[req.params.id]) {
+    return res.status(403).send("Cannot EDIT: URL not found.");
   }
 
   urlDatabase[req.params.id].longURL = req.body.longURL;
